@@ -224,9 +224,9 @@ export default function ModulosTao({ onClose }: Props) {
                 <p><a href={sobre.web} target="_blank" rel="noreferrer" className="text-piztu-on underline">{sobre.web}</a></p>
               )}
               {sobre.email && <p>{t('modulos.sobre.contacto', 'Contacto: {{email}}', { email: sobre.email })}</p>}
-              <p className="font-semibold mt-2">{t('sobre.licenza', 'Licenza GNU General Public License v3 (GPLv3)')}</p>
+              <p className="font-semibold mt-2">{t('sobre.licenza', 'Licenza GNU Affero General Public License v3 (AGPLv3)')}</p>
               <p className="text-xs text-stone-500 whitespace-pre-line">
-                {t('sobre.licdesc', 'Software libre: pódese usar, estudar, modificar e redistribuír libremente. Calquera traballo derivado que se redistribúa ten que publicarse tamén baixo GPLv3, co código fonte dispoñible (copyleft). Texto completo no ficheiro LICENSE.')}
+                {t('sobre.licdesc', 'Software libre: pódese usar, estudar, modificar e redistribuír libremente. Calquera traballo derivado que se redistribúa — incluído o uso a través da rede — ten que publicarse tamén baixo AGPLv3, co código fonte dispoñible (copyleft). Texto completo no ficheiro LICENSE.')}
               </p>
             </div>
           </div>
