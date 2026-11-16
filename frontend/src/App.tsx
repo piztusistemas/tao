@@ -1655,7 +1655,7 @@ export default function App() {
                           </div>
                           {deliveryDot && (
                             <span aria-hidden="true"
-                              className={`absolute top-0.5 right-0.5 w-2 h-2 rounded-full pointer-events-none ${deliveryDot === 'entregada' ? 'bg-emerald-500' : 'bg-rose-600 punto-intermitente'}`} />
+                              className={`absolute top-1 right-1 w-[3px] h-[3px] rounded-full pointer-events-none ${deliveryDot === 'entregada' ? 'bg-emerald-500' : 'bg-rose-600 punto-intermitente'}`} />
                           )}
                           {incidentTypes.length > 0 && (
                             <div className="absolute bottom-0.5 left-0 right-0 flex items-center justify-center gap-0.5">
