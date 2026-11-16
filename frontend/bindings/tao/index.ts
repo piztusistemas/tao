@@ -15,6 +15,7 @@ export {
     CSVResult,
     CalendarPeriod,
     CambioGrupoResult,
+    ConexionRexistro,
     EntradaRedaccionMalta,
     EstadoActualizacionTao,
     FBQueueStatus,

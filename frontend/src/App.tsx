@@ -14,6 +14,7 @@ import {
   AddIncident, RemoveIncident, GetPrivateNote, SavePrivateNote,
   ListWorkFiles, UploadWorkFiles, DownloadWorkFile, DeleteWorkFile, ListWorkFileDates,
   ListStudentWorkFiles, DownloadStudentWorkFile, ListStudentWorkFileDates, ImportSchoolCalendar,
+  MarcarEntregas, ListClassDeliveryDates, RebuildDeliveryMarks,
   GetMyMessages, GetStudentMessages, GetMessagingConfig,
   UploadTaskFiles, ListTaskFiles, DownloadTaskFile, DeleteTaskFile,
   SaveStudentLogComment, UploadCommentFile, DeleteCommentFile,
@@ -48,6 +49,7 @@ import Logo from './Logo';
 import PasswordInput from './PasswordInput';
 import ProgramacionPanel from './ProgramacionPanel';
 import ModulosTao from './Modulos';
+import SeguimentoAlumno from './SeguimentoAlumno';
 
 // newEntryId xera o identificador dunha fila do calendario. Só serve como clave de
 // React e para editar/borrar a fila, non se persiste con ningún significado.
@@ -229,6 +231,9 @@ export default function App() {
   // parte en AdminPanel) as ve/edita; nunca viaxan polo backup do alumno nin polos
   // informes — ver GetPrivateNote/SavePrivateNote (tao/notas_privadas.go).
   const [showPrivateNotes, setShowPrivateNotes] = useState(false);
+  // Informe de seguimento (conexións e entregas por UD) do alumno seleccionado — ver
+  // SeguimentoAlumno.tsx. Só profesorado revisando un alumno.
+  const [showSeguimento, setShowSeguimento] = useState(false);
   const [showModulos, setShowModulos] = useState(false);
   // Reprogramación: confirmación pendente (mensaxe do efecto + acción a aplicar).
   const [reprogramReq, setReprogramReq] = useState<{ message: string; apply: () => void } | null>(null);
@@ -276,6 +281,35 @@ export default function App() {
     refreshWorkFileDates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSubject?.id, isProfessor, reviewingStudent, selectedStudent, profile?.connected]);
+
+  // Feedback de entregas no calendario do alumnado (tao/entregas.go): en cada sesión
+  // pasada, punto verde se o alumno entregou (práctica escrita ou ficheiros, o mesmo
+  // criterio do informe de seguimento) e punto vermello intermitente se non — só nas
+  // sesións nas que ALGÚN compañeiro entregou (classDeliveryDates, marcas anónimas no
+  // compartido); se ninguén entregou, non había tarefa e non se amosa nada. Tamén se ve
+  // en «Acceder como», pero aí só se len as marcas, nunca se escriben.
+  const showDeliveryFeedback = (!isProfessor && !!profile?.connected) || (isProfessor && impersonating);
+  const [classDeliveryDates, setClassDeliveryDates] = useState<Set<string>>(new Set());
+  const ownDeliveredDates = useMemo(() => {
+    const out = new Set<string>(workFileDates);
+    for (const [date, log] of Object.entries<any>(currentSubject?.logs || {})) {
+      if (typeof log?.content === 'string' && log.content.trim()) out.add(date);
+    }
+    return [...out].sort();
+  }, [currentSubject?.logs, workFileDates]);
+  const ownDeliveredKey = ownDeliveredDates.join(',');
+  useEffect(() => {
+    if (!currentSubject || !showDeliveryFeedback) { setClassDeliveryDates(new Set()); return; }
+    let cancelled = false;
+    // O alumno deixa (só as que falten) as marcas das súas entregas, incluídas as
+    // anteriores a esta versión, e recibe de volta as de toda a clase.
+    const req = !isProfessor && ownDeliveredDates.length > 0
+      ? MarcarEntregas(currentSubject.id, ownDeliveredDates)
+      : ListClassDeliveryDates(currentSubject.id);
+    req.then(d => { if (!cancelled) setClassDeliveryDates(new Set(d || [])); }).catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSubject?.id, showDeliveryFeedback, ownDeliveredKey]);
 
   // Students of the active materia's groups: the professor's selector only lists the
   // alumnado matriculado nesa materia (matched by group).
@@ -472,6 +506,15 @@ export default function App() {
         }
         setRoster((await ListRoster()) || []);
         setSelectedStudent('');
+        // En segundo plano (sen agardar nin avisar): completa as marcas anónimas de
+        // entrega de cada materia a partir do traballo xa entregado polo alumnado, para
+        // que o seu calendario amose os puntos verde/vermello sen ter que agardar a que
+        // cada alumno entre coa versión nova (tao/entregas.go). Idempotente.
+        (async () => {
+          for (const m of built) {
+            try { await RebuildDeliveryMarks(m.id); } catch { /* materia allea ou sen servidor */ }
+          }
+        })();
         setSyncMsg(built.length > 0
           ? t('app.sync.programacionCargada', { count: built.length })
           : t('app.sync.senMaterias'));
@@ -1133,6 +1176,15 @@ export default function App() {
                     <Pencil className="w-4 h-4" /> {t('app.notasPrivadas.boton')}
                   </button>
                 )}
+                {selectedStudent && !impersonating && (
+                  <button
+                    onClick={() => setShowSeguimento(true)}
+                    title={t('seguimento.botonTitulo')}
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm bg-emerald-100 text-emerald-800 hover:bg-emerald-200 rounded-lg font-medium transition-colors shrink-0"
+                  >
+                    <ClipboardList className="w-4 h-4" /> {t('seguimento.boton')}
+                  </button>
+                )}
                 {impersonating && (
                   <button
                     onClick={exitImpersonation}
@@ -1574,6 +1626,17 @@ export default function App() {
                         title += ` [${incidentTypes.map(t => INCIDENT_SYMBOLS[t]).join(' ')}]`;
                       }
 
+                      // Punto de entrega (ver showDeliveryFeedback): só sesións de clase xa
+                      // pasadas, sen exame, nas que algún compañeiro entregou.
+                      const ownDelivered = !!(log?.content && log.content.trim()) || hasFiles;
+                      const deliveryDot = showDeliveryFeedback && unit && isClassDay && !isException
+                        && log?.status !== 'exame' && day.dateString < todayString
+                        && classDeliveryDates.has(day.dateString)
+                        ? (ownDelivered ? 'entregada' : 'pendente') : null;
+                      if (deliveryDot) {
+                        title += ` · ${t(deliveryDot === 'entregada' ? 'app.entregaFeita' : 'app.entregaPendente')}`;
+                      }
+
                       const isDayClickable = !!datePicker || (!isWeekend && !isHoliday && isClassDay && !currentSubject.isLocked && canEditDays);
                       return (
                         <td
@@ -1590,6 +1653,10 @@ export default function App() {
                           <div className={`flex items-center justify-center h-10 w-full font-medium ${textColor}`}>
                             {content}
                           </div>
+                          {deliveryDot && (
+                            <span aria-hidden="true"
+                              className={`absolute top-0.5 right-0.5 w-2 h-2 rounded-full pointer-events-none ${deliveryDot === 'entregada' ? 'bg-emerald-500' : 'bg-rose-600 punto-intermitente'}`} />
+                          )}
                           {incidentTypes.length > 0 && (
                             <div className="absolute bottom-0.5 left-0 right-0 flex items-center justify-center gap-0.5">
                               {incidentTypes.map(ty => (
@@ -1708,6 +1775,19 @@ export default function App() {
           onClose={() => setShowPrivateNotes(false)}
         />
       )}
+
+      {showSeguimento && selectedStudent && currentSubject && (() => {
+        const r = roster.find(x => x.username === selectedStudent);
+        return (
+          <SeguimentoAlumno
+            subject={currentSubject}
+            username={selectedStudent}
+            studentLabel={[r?.name, r?.surname].filter(Boolean).join(' ') || selectedStudent}
+            group={r?.group || ''}
+            onClose={() => setShowSeguimento(false)}
+          />
+        );
+      })()}
 
       {showSobre && <SobreTao onClose={() => setShowSobre(false)} />}
 

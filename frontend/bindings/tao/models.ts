@@ -402,6 +402,46 @@ export class CambioGrupoResult {
 }
 
 /**
+ * ConexionRexistro é un día con conexión, aplanado para o frontend (Wails non xera tipo
+ * para os valores dun mapa).
+ */
+export class ConexionRexistro {
+    /**
+     * YYYY-MM-DD
+     */
+    "data": string;
+    "primeira": string;
+    "equipos": string[];
+
+    /** Creates a new ConexionRexistro instance. */
+    constructor($$source: Partial<ConexionRexistro> = {}) {
+        if (!("data" in $$source)) {
+            this["data"] = "";
+        }
+        if (!("primeira" in $$source)) {
+            this["primeira"] = "";
+        }
+        if (!("equipos" in $$source)) {
+            this["equipos"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ConexionRexistro instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ConexionRexistro {
+        const $$createField2_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("equipos" in $$parsedSource) {
+            $$parsedSource["equipos"] = $$createField2_0($$parsedSource["equipos"]);
+        }
+        return new ConexionRexistro($$parsedSource as Partial<ConexionRexistro>);
+    }
+}
+
+/**
  * EntradaRedaccionMalta é UN día do rexistro que hai que redactar — vén do
  * frontend (ReportBuilder.tsx), xa filtrado polo alcance escollido.
  */

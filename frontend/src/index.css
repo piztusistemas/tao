@@ -102,3 +102,17 @@
   }
 }
 
+
+/* Punto vermello intermitente das sesións sen entregar no calendario do alumnado
+   (App.tsx, deliveryDot). Quen pediu menos movemento no sistema veo fixo. */
+@keyframes tao-parpadeo {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+.punto-intermitente {
+  animation: tao-parpadeo 1.2s ease-in-out infinite;
+  box-shadow: 0 0 4px rgb(225 29 72 / 0.8);
+}
+@media (prefers-reduced-motion: reduce) {
+  .punto-intermitente { animation: none; }
+}

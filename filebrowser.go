@@ -438,6 +438,9 @@ func (a *App) loginServer(username, password, serverURL string) (*Profile, error
 	a.profile = prof
 	a.apiEstadoMu.Unlock()
 	a.publicarSesion(true)
+	// Rexistro do día de conexión para o informe de seguimento (conexions.go). Son
+	// dúas peticións pequenas; un fallo só se rexistra no log, nunca impide entrar.
+	a.rexistrarConexion()
 	return prof, nil
 }
 

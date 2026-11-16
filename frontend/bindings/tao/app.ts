@@ -504,6 +504,16 @@ export function ExportSignedReport(html: string, suggestedName: string, materiaI
 }
 
 /**
+ * ExportTrackingReportPDF converte en PDF o informe de seguimento dun alumno (HTML
+ * xerado por SeguimentoAlumno.tsx) e pregunta onde gardalo. Devolve a ruta gardada, ou
+ * "" se se cancela. Non se asina: é un documento de traballo do profesorado. Só
+ * profesorado.
+ */
+export function ExportTrackingReportPDF(html: string, suggestedName: string): $CancellablePromise<string> {
+    return $Call.ByID(2225936906, html, suggestedName);
+}
+
+/**
  * FBQueueStatus devolve o estado actual da cola de sincronización pendente co
  * servidor de ficheiros (chamadas Wails desde o frontend son sempre asíncronas en JS,
  * pero este método en si é instantáneo: só le estado en memoria).
@@ -627,6 +637,16 @@ export function GetStudentBackup(username: string): $CancellablePromise<string> 
 }
 
 /**
+ * GetStudentConnections devolve, ordenados por data, os días en que un alumno se
+ * conectou a Tao (ver rexistrarConexion). Só profesorado.
+ */
+export function GetStudentConnections(username: string): $CancellablePromise<$models.ConexionRexistro[]> {
+    return $Call.ByID(3460914115, username).then(($result: any) => {
+        return $$createType22($result);
+    });
+}
+
+/**
  * GetStudentMessages returns a student's conversation for a materia. Professor only.
  */
 export function GetStudentMessages(username: string, materiaID: string): $CancellablePromise<$models.Message[]> {
@@ -704,7 +724,7 @@ export function IdiomaPiztu(): $CancellablePromise<string> {
  */
 export function ImportProens(rawURL: string): $CancellablePromise<$models.ProensResult | null> {
     return $Call.ByID(2942814161, rawURL).then(($result: any) => {
-        return $$createType22($result);
+        return $$createType24($result);
     });
 }
 
@@ -718,7 +738,7 @@ export function ImportProens(rawURL: string): $CancellablePromise<$models.Proens
  */
 export function ImportProensInfo(rawURL: string): $CancellablePromise<$models.ProensInfo | null> {
     return $Call.ByID(104087625, rawURL).then(($result: any) => {
-        return $$createType24($result);
+        return $$createType26($result);
     });
 }
 
@@ -729,7 +749,7 @@ export function ImportProensInfo(rawURL: string): $CancellablePromise<$models.Pr
  */
 export function ImportSchoolCalendar(rawURL: string): $CancellablePromise<$models.SchoolCalendar | null> {
     return $Call.ByID(1243264470, rawURL).then(($result: any) => {
-        return $$createType26($result);
+        return $$createType28($result);
     });
 }
 
@@ -753,12 +773,22 @@ export function InstalarYang(): $CancellablePromise<void> {
 }
 
 /**
+ * ListClassDeliveryDates devolve as sesións dunha materia nas que polo menos un
+ * alumno entregou algo (marcas anónimas, ver arriba). Calquera conta conectada.
+ */
+export function ListClassDeliveryDates(materiaID: string): $CancellablePromise<string[]> {
+    return $Call.ByID(2517941780, materiaID).then(($result: any) => {
+        return $$createType29($result);
+    });
+}
+
+/**
  * ListCommentFiles returns the clarifying files the professor attached to the logged-in
  * student's session.
  */
 export function ListCommentFiles(materiaID: string, date: string): $CancellablePromise<$models.WorkFile[]> {
     return $Call.ByID(2041185757, materiaID, date).then(($result: any) => {
-        return $$createType28($result);
+        return $$createType31($result);
     });
 }
 
@@ -769,7 +799,7 @@ export function ListCommentFiles(materiaID: string, date: string): $CancellableP
  */
 export function ListMaltaReports(materiaID: string): $CancellablePromise<$models.MaltaIndiceEntrada[]> {
     return $Call.ByID(2444683865, materiaID).then(($result: any) => {
-        return $$createType30($result);
+        return $$createType33($result);
     });
 }
 
@@ -804,7 +834,7 @@ export function ListMyMaterias(): $CancellablePromise<$models.MateriaDef[]> {
  */
 export function ListMyPeers(): $CancellablePromise<$models.RosterRow[]> {
     return $Call.ByID(671135700).then(($result: any) => {
-        return $$createType32($result);
+        return $$createType35($result);
     });
 }
 
@@ -814,7 +844,7 @@ export function ListMyPeers(): $CancellablePromise<$models.RosterRow[]> {
  */
 export function ListRoster(): $CancellablePromise<$models.RosterRow[]> {
     return $Call.ByID(918360206).then(($result: any) => {
-        return $$createType32($result);
+        return $$createType35($result);
     });
 }
 
@@ -824,7 +854,7 @@ export function ListRoster(): $CancellablePromise<$models.RosterRow[]> {
  */
 export function ListStudentCommentFiles(username: string, materiaID: string, date: string): $CancellablePromise<$models.WorkFile[]> {
     return $Call.ByID(1934859268, username, materiaID, date).then(($result: any) => {
-        return $$createType28($result);
+        return $$createType31($result);
     });
 }
 
@@ -834,7 +864,7 @@ export function ListStudentCommentFiles(username: string, materiaID: string, dat
  */
 export function ListStudentWorkFileDates(username: string, materiaID: string): $CancellablePromise<string[]> {
     return $Call.ByID(3881050888, username, materiaID).then(($result: any) => {
-        return $$createType33($result);
+        return $$createType29($result);
     });
 }
 
@@ -844,7 +874,7 @@ export function ListStudentWorkFileDates(username: string, materiaID: string): $
  */
 export function ListStudentWorkFiles(username: string, materiaID: string, date: string): $CancellablePromise<$models.WorkFile[]> {
     return $Call.ByID(1088956532, username, materiaID, date).then(($result: any) => {
-        return $$createType28($result);
+        return $$createType31($result);
     });
 }
 
@@ -854,7 +884,7 @@ export function ListStudentWorkFiles(username: string, materiaID: string, date: 
  */
 export function ListTaskFiles(materiaID: string, date: string): $CancellablePromise<$models.WorkFile[]> {
     return $Call.ByID(419025623, materiaID, date).then(($result: any) => {
-        return $$createType28($result);
+        return $$createType31($result);
     });
 }
 
@@ -866,7 +896,7 @@ export function ListTaskFiles(materiaID: string, date: string): $CancellableProm
  */
 export function ListTaskOverrides(materiaID: string, date: string): $CancellablePromise<string[]> {
     return $Call.ByID(559340529, materiaID, date).then(($result: any) => {
-        return $$createType33($result);
+        return $$createType29($result);
     });
 }
 
@@ -876,7 +906,7 @@ export function ListTaskOverrides(materiaID: string, date: string): $Cancellable
  */
 export function ListUsers(): $CancellablePromise<$models.AdminUser[]> {
     return $Call.ByID(2023140511).then(($result: any) => {
-        return $$createType35($result);
+        return $$createType37($result);
     });
 }
 
@@ -886,7 +916,7 @@ export function ListUsers(): $CancellablePromise<$models.AdminUser[]> {
  */
 export function ListWorkFileDates(materiaID: string): $CancellablePromise<string[]> {
     return $Call.ByID(1940077599, materiaID).then(($result: any) => {
-        return $$createType33($result);
+        return $$createType29($result);
     });
 }
 
@@ -895,7 +925,7 @@ export function ListWorkFileDates(materiaID: string): $CancellablePromise<string
  */
 export function ListWorkFiles(materiaID: string, date: string): $CancellablePromise<$models.WorkFile[]> {
     return $Call.ByID(2351611795, materiaID, date).then(($result: any) => {
-        return $$createType28($result);
+        return $$createType31($result);
     });
 }
 
@@ -907,7 +937,7 @@ export function ListWorkFiles(materiaID: string, date: string): $CancellableProm
  */
 export function ListWorkFilesForReport(materiaID: string, date: string): $CancellablePromise<$models.WorkFile[]> {
     return $Call.ByID(2613944404, materiaID, date).then(($result: any) => {
-        return $$createType28($result);
+        return $$createType31($result);
     });
 }
 
@@ -917,7 +947,7 @@ export function ListWorkFilesForReport(materiaID: string, date: string): $Cancel
  */
 export function ListarOrfos(): $CancellablePromise<$models.InformeOrfos | null> {
     return $Call.ByID(3439912761).then(($result: any) => {
-        return $$createType37($result);
+        return $$createType39($result);
     });
 }
 
@@ -928,7 +958,7 @@ export function ListarOrfos(): $CancellablePromise<$models.InformeOrfos | null> 
  */
 export function LoadBackupArchive(): $CancellablePromise<$models.backupManifest> {
     return $Call.ByID(2419256139).then(($result: any) => {
-        return $$createType38($result);
+        return $$createType40($result);
     });
 }
 
@@ -938,7 +968,7 @@ export function LoadBackupArchive(): $CancellablePromise<$models.backupManifest>
  */
 export function Login(username: string, password: string, serverURL: string): $CancellablePromise<$models.Profile | null> {
     return $Call.ByID(1387155178, username, password, serverURL).then(($result: any) => {
-        return $$createType40($result);
+        return $$createType42($result);
     });
 }
 
@@ -961,6 +991,19 @@ export function MaltaDispoñible(): $CancellablePromise<boolean> {
 }
 
 /**
+ * MarcarEntregas deixa a marca anónima de entrega en cada unha das datas indicadas
+ * (sesións nas que o alumno con sesión aberta entregou), creando só as que falten.
+ * Devolve todas as datas con marca da materia tras marcar, para que o calendario se
+ * actualice sen outra petición. Só alumnado: o profesorado non entrega, e en «Acceder
+ * como» o frontend non a chama.
+ */
+export function MarcarEntregas(materiaID: string, datas: string[]): $CancellablePromise<string[]> {
+    return $Call.ByID(3596181062, materiaID, datas).then(($result: any) => {
+        return $$createType29($result);
+    });
+}
+
+/**
  * ModulosDispoTao lista os módulos xa instalados (ExternosTao) máis
  * calquera outro dispoñible no catálogo remoto (CatalogoModulosTao) que
  * aínda non estea instalado — se non hai rede ou o repo está baleiro,
@@ -969,7 +1012,7 @@ export function MaltaDispoñible(): $CancellablePromise<boolean> {
  */
 export function ModulosDispoTao(): $CancellablePromise<$models.ModuloInfoTao[]> {
     return $Call.ByID(648021939).then(($result: any) => {
-        return $$createType42($result);
+        return $$createType44($result);
     });
 }
 
@@ -988,7 +1031,7 @@ export function OpenFile(path: string): $CancellablePromise<void> {
  */
 export function PickFiles(title: string): $CancellablePromise<string[]> {
     return $Call.ByID(4162647679, title).then(($result: any) => {
-        return $$createType33($result);
+        return $$createType29($result);
     });
 }
 
@@ -1009,7 +1052,7 @@ export function PostToWall(group: string, text: string, attachPaths: string[]): 
  */
 export function PrepareCorrectionFolder(materiaID: string, date: string): $CancellablePromise<$models.PracticaCorrectionSummary | null> {
     return $Call.ByID(1947808232, materiaID, date).then(($result: any) => {
-        return $$createType44($result);
+        return $$createType46($result);
     });
 }
 
@@ -1028,7 +1071,7 @@ export function PullBackup(): $CancellablePromise<string> {
  */
 export function PurgarOrfos(incluirCartafoles: boolean): $CancellablePromise<$models.InformeOrfos | null> {
     return $Call.ByID(2822046033, incluirCartafoles).then(($result: any) => {
-        return $$createType37($result);
+        return $$createType39($result);
     });
 }
 
@@ -1041,6 +1084,19 @@ export function PushBackup(jsonStr: string): $CancellablePromise<string> {
 }
 
 /**
+ * RebuildDeliveryMarks crea as marcas de entrega que falten nunha materia a partir do
+ * traballo xa entregado por todo o seu alumnado (práctica escrita no backup ou
+ * ficheiros en traballos/<materia>/<data>/). Serve para que o calendario do alumnado
+ * amose os puntos desde o primeiro día, sen agardar a que cada alumno entre coa versión
+ * nova de Tao. É idempotente (só crea as que faltan) e o frontend chámaa en segundo
+ * plano cando o profesorado inicia sesión. Devolve cantas marcas creou. Só o profesor
+ * dono da materia.
+ */
+export function RebuildDeliveryMarks(materiaID: string): $CancellablePromise<number> {
+    return $Call.ByID(485776758, materiaID);
+}
+
+/**
  * RegenerateCertificate issues a fresh personal certificate for the logged-in
  * student (signed by the department CA embedded in the app), protected with their
  * current password, and uploads it to their folder on the File Browser server,
@@ -1050,7 +1106,7 @@ export function PushBackup(jsonStr: string): $CancellablePromise<string> {
  */
 export function RegenerateCertificate(name: string, surname: string): $CancellablePromise<$models.Profile | null> {
     return $Call.ByID(587761926, name, surname).then(($result: any) => {
-        return $$createType40($result);
+        return $$createType42($result);
     });
 }
 
@@ -1078,7 +1134,7 @@ export function RemoveIncident(username: string, materiaID: string, date: string
  */
 export function RestoreAllCourses(withStudents: boolean): $CancellablePromise<$models.AllCoursesRestoreResult> {
     return $Call.ByID(13996290, withStudents).then(($result: any) => {
-        return $$createType45($result);
+        return $$createType47($result);
     });
 }
 
@@ -1091,7 +1147,7 @@ export function RestoreAllCourses(withStudents: boolean): $CancellablePromise<$m
  */
 export function RestoreCourse(sourceMateriaID: string, targetMateriaID: string, withStudents: boolean): $CancellablePromise<$models.RestoreResult> {
     return $Call.ByID(795244292, sourceMateriaID, targetMateriaID, withStudents).then(($result: any) => {
-        return $$createType46($result);
+        return $$createType48($result);
     });
 }
 
@@ -1102,7 +1158,7 @@ export function RestoreCourse(sourceMateriaID: string, targetMateriaID: string, 
  */
 export function RestoreSite(withUsers: boolean): $CancellablePromise<$models.SiteRestoreResult> {
     return $Call.ByID(893745314, withUsers).then(($result: any) => {
-        return $$createType47($result);
+        return $$createType49($result);
     });
 }
 
@@ -1268,7 +1324,7 @@ export function SincronizarAntesDeSair(): $CancellablePromise<$models.FBQueueSta
  */
 export function UploadCommentFile(username: string, materiaID: string, date: string): $CancellablePromise<string[]> {
     return $Call.ByID(1696474551, username, materiaID, date).then(($result: any) => {
-        return $$createType33($result);
+        return $$createType29($result);
     });
 }
 
@@ -1278,7 +1334,7 @@ export function UploadCommentFile(username: string, materiaID: string, date: str
  */
 export function UploadTaskFiles(materiaID: string, date: string): $CancellablePromise<string[]> {
     return $Call.ByID(352364348, materiaID, date).then(($result: any) => {
-        return $$createType33($result);
+        return $$createType29($result);
     });
 }
 
@@ -1289,7 +1345,7 @@ export function UploadTaskFiles(materiaID: string, date: string): $CancellablePr
  */
 export function UploadWorkFiles(materiaID: string, date: string): $CancellablePromise<string[]> {
     return $Call.ByID(1716182092, materiaID, date).then(($result: any) => {
-        return $$createType33($result);
+        return $$createType29($result);
     });
 }
 
@@ -1326,30 +1382,32 @@ const $$createType17 = $models.MaltaInforme.createFrom;
 const $$createType18 = $models.MessagingConfig.createFrom;
 const $$createType19 = $models.Message.createFrom;
 const $$createType20 = $Create.Array($$createType19);
-const $$createType21 = $models.ProensResult.createFrom;
-const $$createType22 = $Create.Nullable($$createType21);
-const $$createType23 = $models.ProensInfo.createFrom;
+const $$createType21 = $models.ConexionRexistro.createFrom;
+const $$createType22 = $Create.Array($$createType21);
+const $$createType23 = $models.ProensResult.createFrom;
 const $$createType24 = $Create.Nullable($$createType23);
-const $$createType25 = $models.SchoolCalendar.createFrom;
+const $$createType25 = $models.ProensInfo.createFrom;
 const $$createType26 = $Create.Nullable($$createType25);
-const $$createType27 = $models.WorkFile.createFrom;
-const $$createType28 = $Create.Array($$createType27);
-const $$createType29 = $models.MaltaIndiceEntrada.createFrom;
-const $$createType30 = $Create.Array($$createType29);
-const $$createType31 = $models.RosterRow.createFrom;
-const $$createType32 = $Create.Array($$createType31);
-const $$createType33 = $Create.Array($Create.Any);
-const $$createType34 = $models.AdminUser.createFrom;
+const $$createType27 = $models.SchoolCalendar.createFrom;
+const $$createType28 = $Create.Nullable($$createType27);
+const $$createType29 = $Create.Array($Create.Any);
+const $$createType30 = $models.WorkFile.createFrom;
+const $$createType31 = $Create.Array($$createType30);
+const $$createType32 = $models.MaltaIndiceEntrada.createFrom;
+const $$createType33 = $Create.Array($$createType32);
+const $$createType34 = $models.RosterRow.createFrom;
 const $$createType35 = $Create.Array($$createType34);
-const $$createType36 = $models.InformeOrfos.createFrom;
-const $$createType37 = $Create.Nullable($$createType36);
-const $$createType38 = $models.backupManifest.createFrom;
-const $$createType39 = $models.Profile.createFrom;
-const $$createType40 = $Create.Nullable($$createType39);
-const $$createType41 = $models.ModuloInfoTao.createFrom;
-const $$createType42 = $Create.Array($$createType41);
-const $$createType43 = $models.PracticaCorrectionSummary.createFrom;
-const $$createType44 = $Create.Nullable($$createType43);
-const $$createType45 = $models.AllCoursesRestoreResult.createFrom;
-const $$createType46 = $models.RestoreResult.createFrom;
-const $$createType47 = $models.SiteRestoreResult.createFrom;
+const $$createType36 = $models.AdminUser.createFrom;
+const $$createType37 = $Create.Array($$createType36);
+const $$createType38 = $models.InformeOrfos.createFrom;
+const $$createType39 = $Create.Nullable($$createType38);
+const $$createType40 = $models.backupManifest.createFrom;
+const $$createType41 = $models.Profile.createFrom;
+const $$createType42 = $Create.Nullable($$createType41);
+const $$createType43 = $models.ModuloInfoTao.createFrom;
+const $$createType44 = $Create.Array($$createType43);
+const $$createType45 = $models.PracticaCorrectionSummary.createFrom;
+const $$createType46 = $Create.Nullable($$createType45);
+const $$createType47 = $models.AllCoursesRestoreResult.createFrom;
+const $$createType48 = $models.RestoreResult.createFrom;
+const $$createType49 = $models.SiteRestoreResult.createFrom;

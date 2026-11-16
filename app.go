@@ -102,6 +102,11 @@ type App struct {
 	// normally assigns these fields (Login/Logout/AdminLogin) — see api_auth.go.
 	apiEstadoMu sync.RWMutex
 
+	// conexionsClave lembra o último "usuario|data|equipo" xa apuntado no rexistro de
+	// conexións (conexions.go), para que o latexo non volva ler e escribir en balde.
+	conexionsMu    sync.Mutex
+	conexionsClave string
+
 	// Offline queue for File Browser writes (see fbqueue.go): operations that fail
 	// transiently (server unreachable, slow VPS) are persisted here and retried in
 	// the background instead of being lost.
@@ -188,6 +193,9 @@ func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOpt
 		for range t.C {
 			if a.profile != nil {
 				a.publicarSesion(true)
+				// Se a app segue aberta ao cambiar o día, ese día tamén conta como
+				// conexión (conexions.go; non escribe nada se xa estaba apuntado).
+				a.rexistrarConexion()
 			}
 		}
 	}()
