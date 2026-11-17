@@ -6,16 +6,13 @@ package main
 // ningún dos dous porque vive noutro módulo/binario Go).
 //
 // A versión instalada lese do ficheiro VERSION embebido na raíz deste
-// módulo. A versión publicada consúltase no repositorio compartido de
-// módulos de Piztu, piztusistemas/modulos — cada publicación de Tao crea a súa
-// .zip soltos na RAÍZ dese repo, non en Releases (o repo non ten ningunha):
-// lístase "/contents/" e búscase o "tao_<versión>.zip" de versión máis
-// alta — a versión remota parséase dese nome de ficheiro. É a mesma fonte
-// que consulta Piztu para os seus módulos (ver
-// piztu/internal/modulos/instalar.go, resolverGitHubRepoCompleto), así que
-// publicar un módulo é só subir o seu .zip: nin tags, nin Releases, nin
-// manifests. A carón ten que ir "<nome-do-zip>.sha256", verificado antes
-// de instalar nada.
+// módulo. A versión publicada consúltase na última Release do propio
+// repositorio de Tao, piztusistemas/tao (API /releases/latest, que xa exclúe
+// borradores e prereleases): cada publicación de Tao é unha Release
+// "v<versión>" con dous assets, "tao_<versión>.zip" (o módulo para Piztu:
+// tao, modulo.json e LICENSE) e "tao_<versión>.zip.sha256", verificado antes
+// de instalar nada. A versión remota sae do tag da Release (ou, se non se
+// pode interpretar, do nome do .zip).
 import (
 	"archive/zip"
 	"crypto/sha256"
@@ -37,8 +34,8 @@ import (
 //go:embed VERSION
 var versionTaoFicheiro string
 
-const repoTaoActualizacion = "piztusistemas/modulos"
-const urlContidosTao = "https://api.github.com/repos/" + repoTaoActualizacion + "/contents/"
+const repoTaoActualizacion = "piztusistemas/tao"
+const urlReleaseTao = "https://api.github.com/repos/" + repoTaoActualizacion + "/releases/latest"
 const timeoutComprobarTao = 5 * time.Second
 const timeoutDescargaTao = 60 * time.Second
 
@@ -56,17 +53,18 @@ type EstadoActualizacionTao struct {
 
 type ficheiroGitHubTao struct {
 	Name        string `json:"name"`
-	DownloadURL string `json:"download_url"`
+	DownloadURL string `json:"browser_download_url"`
 }
 
-// escollerZipTao busca, no listado da raíz do repo de módulos, o .zip máis
-// novo do propio Tao e o seu .sha256 irmán. O prefixo "tao_" vai cravado: o
-// repo é compartido con outros módulos e "calquera .zip" collería o errado.
-//
-// A diferenza de cando isto miraba as Releases (unha Release = unha versión,
-// e a API xa as devolvía ordenadas), nun listado de ficheiros conviven todas
-// as versións publicadas á vez: hai que quedar coa MAIOR, non coa primeira
-// que apareza.
+type releaseGitHubTao struct {
+	TagName string              `json:"tag_name"`
+	Body    string              `json:"body"`
+	Assets  []ficheiroGitHubTao `json:"assets"`
+}
+
+// escollerZipTao busca, entre os assets da Release, o .zip de Tao e o seu
+// .sha256 irmán. O prefixo "tao_" vai cravado para non coller outro .zip que
+// se puidese anexar á Release; se houbese varios, quédase co de versión maior.
 func escollerZipTao(ficheiros []ficheiroGitHubTao) (urlZip, nomeZip, urlChecksum string) {
 	mellorVersion := ""
 	for _, f := range ficheiros {
@@ -176,14 +174,14 @@ func (a *App) comprobarActualizacionTao() {
 	emitirEvento("actualizacion_tao_cambiada", estado)
 }
 
-// comprobarActualizacionTaoRede lista a raíz de piztusistemas/modulos en
-// GitHub e compara o .zip de Tao máis novo coa versión instalada. Nunca
-// devolve erro: sen rede, sen .zip de Tao, ou resposta inválida, Disponible
-// queda false.
+// comprobarActualizacionTaoRede consulta a última Release de
+// piztusistemas/tao en GitHub e compara a súa versión coa instalada. Nunca
+// devolve erro: sen rede, sen Release, sen .zip de Tao ou resposta inválida,
+// Disponible queda false.
 func comprobarActualizacionTaoRede() EstadoActualizacionTao {
 	estado := EstadoActualizacionTao{VersionLocal: VersionLocalTao()}
 
-	req, err := http.NewRequest(http.MethodGet, urlContidosTao, nil)
+	req, err := http.NewRequest(http.MethodGet, urlReleaseTao, nil)
 	if err != nil {
 		return estado
 	}
@@ -199,22 +197,30 @@ func comprobarActualizacionTaoRede() EstadoActualizacionTao {
 		return estado
 	}
 
-	var ficheiros []ficheiroGitHubTao
-	if err := json.NewDecoder(resp.Body).Decode(&ficheiros); err != nil {
+	var release releaseGitHubTao
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
 		return estado
 	}
+	return estadoDesdeReleaseTao(estado, release)
+}
 
-	urlZip, nomeZip, urlChecksum := escollerZipTao(ficheiros)
+// estadoDesdeReleaseTao completa estado coa información da Release publicada.
+func estadoDesdeReleaseTao(estado EstadoActualizacionTao, release releaseGitHubTao) EstadoActualizacionTao {
+	urlZip, nomeZip, urlChecksum := escollerZipTao(release.Assets)
 	if urlZip == "" {
-		return estado // na raíz do repo aínda non hai ningún .zip deste módulo
+		return estado // a Release non leva o .zip do módulo
 	}
-	versionRemota := versionDesdeNomeZipTao(nomeZip)
-	if versionRemota == "" {
+	versionRemota := strings.TrimPrefix(strings.TrimSpace(release.TagName), "v")
+	if _, ok := partesVersionTaoActualizacion(versionRemota); !ok {
+		versionRemota = versionDesdeNomeZipTao(nomeZip)
+	}
+	if _, ok := partesVersionTaoActualizacion(versionRemota); !ok {
 		return estado
 	}
 	estado.VersionRemota = versionRemota
 	estado.URLDescarga = urlZip
 	estado.URLChecksum = urlChecksum
+	estado.Notas = strings.TrimSpace(release.Body)
 	estado.Disponible = versionMaiorTaoActualizacion(versionRemota, estado.VersionLocal)
 	return estado
 }
@@ -299,7 +305,7 @@ func lerHashEsperadoTao(r io.Reader) (string, error) {
 
 func comprobarChecksumTao(ficheiroRuta, urlChecksum string) error {
 	if urlChecksum == "" {
-		return fmt.Errorf("non hai un .sha256 a carón do .zip no repo — non se pode verificar a súa integridade, así que se cancela a actualización por seguridade")
+		return fmt.Errorf("non hai un .sha256 a carón do .zip na Release — non se pode verificar a súa integridade, así que se cancela a actualización por seguridade")
 	}
 
 	cliente := http.Client{Timeout: timeoutComprobarTao}
@@ -328,7 +334,7 @@ func comprobarChecksumTao(ficheiroRuta, urlChecksum string) error {
 	obtido := hex.EncodeToString(h.Sum(nil))
 
 	if obtido != esperado {
-		return fmt.Errorf("o SHA-256 do .zip descargado non coincide co publicado no repo — podería estar adulterado; cancélase a actualización")
+		return fmt.Errorf("o SHA-256 do .zip descargado non coincide co publicado na Release — podería estar adulterado; cancélase a actualización")
 	}
 	return nil
 }
