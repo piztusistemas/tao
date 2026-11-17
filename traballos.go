@@ -316,6 +316,9 @@ func (a *App) UploadWorkFiles(materiaID, date string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := a.requireEntregaAberta(materiaID, date); err != nil {
+		return nil, err
+	}
 
 	paths, err := escollerFicheiros("Escolle os ficheiros fonte do teu traballo")
 	if err != nil {
@@ -359,6 +362,9 @@ func (a *App) DeleteWorkFile(materiaID, date, name string) error {
 	}
 	file, err := workFileName(name)
 	if err != nil {
+		return err
+	}
+	if err := a.requireEntregaAberta(materiaID, date); err != nil {
 		return err
 	}
 	return a.fbDelete(dir + "/" + file)

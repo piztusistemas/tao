@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import { Calendar as CalendarIcon, BookOpen, Clock, AlertCircle, Save, X, Settings, FileText, Printer, Download, Lock, Unlock, Plus, Trash2, ChevronLeft, ChevronRight, Upload, Database, FileUp, Loader2, FileJson, Sparkles, LogOut, FileSignature, ShieldCheck, Paperclip, MessageSquare, Move, Eye, FolderOpen, Monitor, RefreshCw, ZoomIn, ZoomOut, Info, Users, Pencil, ClipboardList, Package } from 'lucide-react';
+import { Calendar as CalendarIcon, BookOpen, Clock, AlertCircle, Save, X, Settings, FileText, Printer, Download, Lock, Unlock, Plus, Trash2, ChevronLeft, ChevronRight, Upload, Database, FileUp, Loader2, FileJson, Sparkles, LogOut, FileSignature, ShieldCheck, Paperclip, MessageSquare, Move, Eye, FolderOpen, Monitor, RefreshCw, ZoomIn, ZoomOut, Info, Users, Pencil, ClipboardList, Package, Ban } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { gruposDe } from './grupos';
 import { generateMonthlySchedule, calendarEntriesFromLegacy } from './data';
-import { DailyLog, AppConfig, Unit, Subject, UnitReport, DayStatus, StudentProfile, CalendarEntry, ProensInfo, Incident, IncidentType } from './types';
+import { DailyLog, AppConfig, Unit, Subject, UnitReport, DayStatus, StudentProfile, CalendarEntry, ProensInfo, Incident, IncidentType, Evaluation } from './types';
 import { INCIDENT_TYPES, INCIDENT_SYMBOLS, INCIDENT_LABEL_KEYS, INCIDENT_COLORS } from './incidents';
 import { defaultUnits, defaultHolidays, defaultConfig } from './data';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -50,6 +50,7 @@ import PasswordInput from './PasswordInput';
 import ProgramacionPanel from './ProgramacionPanel';
 import ModulosTao from './Modulos';
 import SeguimentoAlumno from './SeguimentoAlumno';
+import InformeEntregas from './InformeEntregas';
 
 // newEntryId xera o identificador dunha fila do calendario. Só serve como clave de
 // React e para editar/borrar a fila, non se persiste con ningún significado.
@@ -207,7 +208,7 @@ export default function App() {
   // so that reviewing/impersonating a student overlays the same reprogramming/estado/bloqueo
   // the student really sees (the student's own backup does not carry it). Kept fresh from
   // the modelo subjects while no student is selected.
-  const professorModelNoClass = useRef<Record<string, Record<string, { status: DayStatus, unlocked?: boolean }>>>({});
+  const professorModelNoClass = useRef<Record<string, Record<string, { status: DayStatus, unlocked?: boolean, locked?: boolean }>>>({});
   const [roster, setRoster] = useState<RosterRow[]>([]);
   // rawStudentBackup keeps the selected student's full backup so saving preserves any
   // materia not currently shown.
@@ -234,6 +235,9 @@ export default function App() {
   // Informe de seguimento (conexións e entregas por UD) do alumno seleccionado — ver
   // SeguimentoAlumno.tsx. Só profesorado revisando un alumno.
   const [showSeguimento, setShowSeguimento] = useState(false);
+  // Informe do grao de entrega de toda a clase (por UD e global, por avaliación) — ver
+  // InformeEntregas.tsx. Só profesorado na programación modelo.
+  const [showInformeEntregas, setShowInformeEntregas] = useState(false);
   const [showModulos, setShowModulos] = useState(false);
   // Reprogramación: confirmación pendente (mensaxe do efecto + acción a aplicar).
   const [reprogramReq, setReprogramReq] = useState<{ message: string; apply: () => void } | null>(null);
@@ -409,7 +413,7 @@ export default function App() {
       if (m.logs && typeof m.logs === 'object') {
         for (const [date, log] of Object.entries<any>(m.logs)) {
           const st = log?.status;
-          if ((st && st !== 'lectivo') || log?.unlocked) {
+          if ((st && st !== 'lectivo') || log?.unlocked || log?.locked) {
             const hadOwn = !!studentLogs[date];
             // Márcase con _profReprog só cando o alumno non tiña rexistro propio ese día:
             // así é un marcador «prestado» do profesor que se elimina antes de gardar o
@@ -417,6 +421,8 @@ export default function App() {
             // restaura o día como lectivo. Se o alumno xa tiña contido, consérvase.
             studentLogs[date] = {
               ...(studentLogs[date] || {}), date, status: st, unlocked: !!log?.unlocked,
+              // Entrega bloqueada polo profesor (só a sesión de hoxe, ver DayModal).
+              locked: !!log?.locked,
               ...(hadOwn ? {} : { _profReprog: true }),
             };
           }
@@ -455,6 +461,13 @@ export default function App() {
       const logs: Record<string, any> = {};
       for (const [date, log] of Object.entries<any>(s.logs || {})) {
         if (log && log._profReprog) continue; // marcador prestado: descártase (re-derívase ao cargar)
+        // O bloqueo da entrega é do profesor (vive no seu log-modelo): nunca se garda no
+        // backup do alumno, para que desbloquear volva abrir a entrega sen restos.
+        if (log && 'locked' in log) {
+          const { locked: _locked, ...rest } = log;
+          logs[date] = rest;
+          continue;
+        }
         logs[date] = log;
       }
       return { ...s, logs };
@@ -698,7 +711,7 @@ export default function App() {
           // _profReprog marca o marcador prestado para eliminalo antes de gardar (stripReprogFlags),
           // igual que en buildStudentSubjects, para non ensuciar o backup do alumno.
           logs[date] = {
-            ...(logs[date] || {}), date, status: info.status, unlocked: info.unlocked,
+            ...(logs[date] || {}), date, status: info.status, unlocked: info.unlocked, locked: info.locked,
             ...(hadOwn ? {} : { _profReprog: true }),
           };
         }
@@ -746,12 +759,12 @@ export default function App() {
   // review/impersonation overlays the same reprogramming, session status and bloqueo.
   useEffect(() => {
     if (!isProfessor || selectedStudent) return;
-    const snap: Record<string, Record<string, { status: DayStatus, unlocked?: boolean }>> = {};
+    const snap: Record<string, Record<string, { status: DayStatus, unlocked?: boolean, locked?: boolean }>> = {};
     for (const s of subjects) {
-      const m: Record<string, { status: DayStatus, unlocked?: boolean }> = {};
+      const m: Record<string, { status: DayStatus, unlocked?: boolean, locked?: boolean }> = {};
       for (const [date, log] of Object.entries<any>(s.logs || {})) {
-        if (log && ((log.status && log.status !== 'lectivo') || log.unlocked)) {
-          m[date] = { status: log.status, unlocked: !!log.unlocked };
+        if (log && ((log.status && log.status !== 'lectivo') || log.unlocked || log.locked)) {
+          m[date] = { status: log.status, unlocked: !!log.unlocked, locked: !!log.locked };
         }
       }
       snap[s.id] = m;
@@ -1052,6 +1065,30 @@ export default function App() {
 
   const todayString = new Date().toISOString().split('T')[0];
 
+  // Bloqueo da entrega da sesión actual: por defecto a entrega de hoxe está aberta; o
+  // profesor pode bloqueala (e volver abrila) cun botón da cabeceira ou dende o propio
+  // día. Gárdase como locked no seu log-modelo da materia (publicarMateria), o alumnado
+  // recíbeo na sondaxe das materias e o DayModal deixa a resposta e os ficheiros en só
+  // lectura; o backend tamén rexeita subir/borrar ficheiros (tao/entregas_clase.go).
+  const sesionHoxe = isProfessor && !reviewingStudent
+    ? months.flatMap((m: any) => m.days).find((d: any) => d.dateString === todayString && d.unit)
+    : undefined;
+  const entregaHoxeBloqueada = !!currentSubject?.logs?.[todayString]?.locked;
+  const toggleBloqueoEntregaHoxe = async () => {
+    if (!currentSubject || !isProfessor || reviewingStudent) return;
+    const prev = currentSubject.logs?.[todayString];
+    const log: DailyLog = { ...(prev || { date: todayString, content: '', status: 'lectivo' as DayStatus }), date: todayString };
+    if (entregaHoxeBloqueada) delete log.locked; else log.locked = true;
+    const updated = { ...currentSubject, logs: { ...currentSubject.logs, [todayString]: log } };
+    setSubjects(p => p.map(s => s.id === updated.id ? updated : s));
+    try {
+      await publicarMateria(updated);
+      setSyncMsg(t(log.locked ? 'app.entregaHoxe.bloqueadaMsg' : 'app.entregaHoxe.abertaMsg'));
+    } catch (e: any) {
+      setSyncMsg(t('app.sync.erroPublicarSesion', { error: e?.message || e }));
+    }
+  };
+
   const adjustUnitSessions = (unitId: number, delta: number) => {
     if (currentSubject.isLocked) return;
     updateCurrentSubject({
@@ -1261,8 +1298,32 @@ export default function App() {
             </div>
             {/* Os informes de seguimento (unidades, mensuais) son cousa do profesorado:
                 ao alumnado abóndalle co informe asinado das súas prácticas. */}
+            {sesionHoxe && (
+              <button
+                onClick={toggleBloqueoEntregaHoxe}
+                title={entregaHoxeBloqueada ? t('app.entregaHoxe.desbloquearTitulo') : t('app.entregaHoxe.bloquearTitulo')}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors text-sm ${
+                  entregaHoxeBloqueada
+                    ? 'bg-rose-100 text-rose-700 hover:bg-rose-200'
+                    : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                }`}
+              >
+                {entregaHoxeBloqueada ? <Ban className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                {entregaHoxeBloqueada ? t('app.entregaHoxe.bloqueada') : t('app.entregaHoxe.aberta')}
+              </button>
+            )}
             {isProfessor && !impersonating && (
               <div className="flex items-center gap-0.5 bg-stone-100 border border-stone-200 rounded-lg p-1">
+                {!reviewingStudent && (
+                  <button
+                    onClick={() => setShowInformeEntregas(true)}
+                    className="flex items-center gap-2 px-3 py-1.5 hover:bg-stone-200 text-stone-700 rounded-md font-medium transition-colors text-sm"
+                    title={t('informeEntregas.botonTitulo')}
+                  >
+                    <Users className="w-4 h-4" />
+                    {t('informeEntregas.boton')}
+                  </button>
+                )}
                 <button
                   onClick={() => setShowReports(true)}
                   className="flex items-center gap-2 px-3 py-1.5 hover:bg-stone-200 text-stone-700 rounded-md font-medium transition-colors text-sm"
@@ -1789,6 +1850,19 @@ export default function App() {
         );
       })()}
 
+      {showInformeEntregas && isProfessor && !reviewingStudent && currentSubject && (
+        <InformeEntregas
+          subject={currentSubject}
+          onSaveEvaluations={async (evaluations: Evaluation[]) => {
+            const updated = { ...currentSubject, config: { ...currentSubject.config, evaluations } };
+            updateCurrentSubject({ config: updated.config });
+            await publicarMateria(updated);
+            setSyncMsg(t('app.sync.programacionPublicada', { name: updated.name }));
+          }}
+          onClose={() => setShowInformeEntregas(false)}
+        />
+      )}
+
       {showSobre && <SobreTao onClose={() => setShowSobre(false)} />}
 
       {showModulos && isProfessor && <ModulosTao onClose={() => setShowModulos(false)} />}
@@ -1947,7 +2021,7 @@ const FILES_POLL_MS = 8000;
 // WorkFilesSection lists the source files attached to one session and, for the student
 // who owns them, lets them add or remove files. The picker and the save dialog are
 // native (opened from Go), so nothing needs to travel through the webview.
-function WorkFilesSection({ subjectId, date, mode, owner, refreshSignal }: { subjectId: string, date: string, mode: Exclude<FilesMode, 'off'>, owner: string, refreshSignal?: number }) {
+function WorkFilesSection({ subjectId, date, mode, owner, refreshSignal, locked = false }: { subjectId: string, date: string, mode: Exclude<FilesMode, 'off'>, owner: string, refreshSignal?: number, locked?: boolean }) {
   const { t } = useTranslation();
   const [files, setFiles] = useState<WorkFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -1964,6 +2038,9 @@ function WorkFilesSection({ subjectId, date, mode, owner, refreshSignal }: { sub
   const [pendingDelete, setPendingDelete] = useState('');
 
   const readOnly = mode === 'readonly';
+  // locked: o alumno ve os seus ficheiros pero non pode subir nin borrar (o profesor
+  // bloqueou a entrega desta sesión; o backend tamén o rexeita).
+  const canModify = !readOnly && !locked;
 
   // silent=true (background poll, ver FILES_POLL_MS máis abaixo): non toca
   // isLoading/error, para non facer parpadear a lista nin amosar un erro puntual de
@@ -2048,7 +2125,7 @@ function WorkFilesSection({ subjectId, date, mode, owner, refreshSignal }: { sub
           {t('app.files.ficheirosFonteTraballo')}
           {readOnly && <span className="font-normal text-stone-500">{t('app.files.de')} {owner}</span>}
         </label>
-        {!readOnly && (
+        {canModify && (
           <button
             onClick={handleUpload}
             disabled={isUploading}
@@ -2088,7 +2165,7 @@ function WorkFilesSection({ subjectId, date, mode, owner, refreshSignal }: { sub
                   <button onClick={() => handleDownload(f.name)} title={t('app.files.descargar')} className="p-1.5 text-stone-400 hover:text-stone-700 rounded hover:bg-stone-100 transition-colors">
                     <Download className="w-4 h-4" />
                   </button>
-                  {!readOnly && (
+                  {canModify && (
                     <button onClick={() => setPendingDelete(f.name)} title={t('app.files.eliminar')} className="p-1.5 text-stone-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors">
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -2112,7 +2189,7 @@ function WorkFilesSection({ subjectId, date, mode, owner, refreshSignal }: { sub
         </div>
       )}
       {error && <p className="text-xs text-red-600 flex items-start gap-1"><AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />{error}</p>}
-      {!readOnly && !error && (
+      {canModify && !error && (
         <p className="text-xs text-stone-400">
           {t('app.files.gardanseServidor')}
         </p>
@@ -2942,6 +3019,8 @@ function DayModal({ day, existingLog, professorMode = false, readOnlyLog = false
   const [content, setContent] = useState(existingLog?.content || '');
   const [status, setStatus] = useState<DayStatus>(existingLog?.status || 'lectivo');
   const [unlocked, setUnlocked] = useState(!!existingLog?.unlocked);
+  // Bloqueo da entrega da sesión de hoxe (profesorado no modelo): ver toggleBloqueoEntregaHoxe.
+  const [locked, setLocked] = useState(!!existingLog?.locked);
   const [comment, setComment] = useState(existingLog?.profesorComment || '');
   const [showCommentPanel, setShowCommentPanel] = useState(false);
   // Nova incidencia en curso (positivo/negativo/expulsión/falta de orde): non hai
@@ -2980,7 +3059,11 @@ function DayModal({ day, existingLog, professorMode = false, readOnlyLog = false
   // Por defecto só se pode editar a práctica do día de hoxe; días pasados ou futuros quedan
   // bloqueados para o alumnado agás que o profesor os desbloquee expresamente (por sesión).
   // O profesorado nunca está suxeito a este bloqueo.
-  const isLockedForStudent = !professorMode && day.dateString !== today && !unlocked;
+  // A sesión de hoxe está aberta por defecto, pero o profesor pode bloquear a entrega
+  // (locked). Lese do log en vivo (non do estado inicial), para que un bloqueo publicado
+  // mentres o alumno ten o día aberto se aplique sen pechar a xanela.
+  const entregaBloqueada = !professorMode && day.dateString === today && !!existingLog?.locked;
+  const isLockedForStudent = !professorMode && (day.dateString !== today ? !unlocked : entregaBloqueada);
   // isProfessorEditingModel: o profesorado deseñando/revisando a súa propia
   // programación (edita "Sesión"/"Tarefa"), distinto de calquera outro caso en que
   // professorMode tamén é true pero en só lectura - "Acceder como" un alumno
@@ -3004,6 +3087,7 @@ function DayModal({ day, existingLog, professorMode = false, readOnlyLog = false
     if (professorMode) {
       // O desbloqueo é unha decisión do profesor, gárdase no seu log-modelo desta sesión.
       log.unlocked = unlocked;
+      if (locked) log.locked = true;
     } else if (hostname) {
       // Rexistro automático do equipo empregado, para localizar responsables en caso de
       // desperfectos. Só se garda ao gardar dende o propio alumno, nunca ao editar o profesor.
@@ -3081,7 +3165,7 @@ function DayModal({ day, existingLog, professorMode = false, readOnlyLog = false
             )}
           </div>
           <div className="flex items-center gap-1">
-            {onSaveQuiet && (
+            {onSaveQuiet && !entregaBloqueada && (
               <button
                 onClick={handleQuickReport}
                 disabled={reportBusy}
@@ -3183,6 +3267,17 @@ function DayModal({ day, existingLog, professorMode = false, readOnlyLog = false
                   </label>
                 )}
 
+                {/* Sesión de hoxe: a entrega está aberta por defecto; o profesor pode
+                    bloqueala (o mesmo que o botón da cabeceira). */}
+                {!isNoClassDay && day.dateString === today && (
+                  <label className={`flex items-center gap-2 p-2 rounded-lg border text-sm cursor-pointer self-end ${locked ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-stone-200 bg-white text-stone-700'}`}>
+                    <input type="checkbox" checked={locked} onChange={(e) => setLocked(e.target.checked)}
+                      className="w-4 h-4 accent-rose-600" />
+                    {locked ? <Ban className="w-3.5 h-3.5 text-rose-600" /> : <Unlock className="w-3.5 h-3.5 text-emerald-600" />}
+                    {t('app.dayModal.bloquearEntrega')}
+                  </label>
+                )}
+
                 {onReprogram && (
                   <div className="flex flex-col gap-1 rounded-lg border border-stone-200 bg-white p-2">
                     <span className="text-[11px] font-medium text-stone-500">{t('app.dayModal.reprogramarSesions')}</span>
@@ -3209,11 +3304,12 @@ function DayModal({ day, existingLog, professorMode = false, readOnlyLog = false
             </div>
           )}
 
-          {/* Práctica bloqueada: por defecto só se pode editar a do día de hoxe. */}
+          {/* Práctica bloqueada: por defecto só se pode editar a do día de hoxe, e a de
+              hoxe tamén se o profesor bloqueou a entrega. */}
           {!isNoClassDay && isLockedForStudent && (
-            <div className="flex items-center gap-2 rounded-lg border border-stone-300 bg-stone-50 p-2.5 text-sm text-stone-600">
-              <Lock className="w-4 h-4 shrink-0" />
-              {t('app.dayModal.practicaBloqueada')}
+            <div className={`flex items-center gap-2 rounded-lg border p-2.5 text-sm ${entregaBloqueada ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-stone-300 bg-stone-50 text-stone-600'}`}>
+              {entregaBloqueada ? <Ban className="w-4 h-4 shrink-0" /> : <Lock className="w-4 h-4 shrink-0" />}
+              {entregaBloqueada ? t('app.dayModal.entregaBloqueada') : t('app.dayModal.practicaBloqueada')}
             </div>
           )}
 
@@ -3252,12 +3348,12 @@ function DayModal({ day, existingLog, professorMode = false, readOnlyLog = false
               </div>
               {dayTab === 'tarefa' ? (
                 taskMode !== 'off' && <TaskFilesSection ref={taskSectionRef} subjectId={subjectId} date={day.dateString} mode={taskMode} fill />
-              ) : isLockedForStudent ? (
+              ) : isLockedForStudent && !entregaBloqueada ? (
                 <div className="flex items-center gap-2 rounded-lg border border-stone-300 bg-stone-50 p-2.5 text-sm text-stone-600">
                   <Lock className="w-4 h-4 shrink-0" />
                   {t('app.dayModal.practicaBloqueada')}
                 </div>
-              ) : readOnlyLog ? (
+              ) : readOnlyLog || entregaBloqueada ? (
                 <div className="p-3 rounded-lg border border-stone-200 bg-stone-50 text-sm text-stone-800 overflow-y-auto">
                   {(content || '').trim() ? <MarkdownPreview content={content} /> : (
                     <p className="text-stone-500 italic">{t('app.dayModal.senRexistro')}</p>
@@ -3374,7 +3470,7 @@ function DayModal({ day, existingLog, professorMode = false, readOnlyLog = false
           )}
 
           {filesMode !== 'off' && (
-            <WorkFilesSection subjectId={subjectId} date={day.dateString} mode={filesMode} owner={filesOwner} refreshSignal={filesRefresh} />
+            <WorkFilesSection subjectId={subjectId} date={day.dateString} mode={filesMode} owner={filesOwner} locked={entregaBloqueada} refreshSignal={filesRefresh} />
           )}
         </div>
 

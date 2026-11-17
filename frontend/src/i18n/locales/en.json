@@ -668,7 +668,9 @@
       "incidencias": "Incidents",
       "eliminarIncidencia": "Remove this incident",
       "motivoOpcional": "Reason (optional)",
-      "engadir": "Add"
+      "engadir": "Add",
+      "bloquearEntrega": "Lock submission for this session",
+      "entregaBloqueada": "Your teacher has locked submission for this session: you can see your answer and files, but not change them."
     },
     "pechar": "Close",
     "settings": {
@@ -821,7 +823,15 @@
       "ataData": "Up to {{data}}"
     },
     "entregaFeita": "Submitted",
-    "entregaPendente": "Not submitted"
+    "entregaPendente": "Not submitted",
+    "entregaHoxe": {
+      "aberta": "Today's submission open",
+      "bloqueada": "Today's submission locked",
+      "bloquearTitulo": "Lock task submission for today's session",
+      "desbloquearTitulo": "Reopen task submission for today's session",
+      "bloqueadaMsg": "Submission for today's session locked for students.",
+      "abertaMsg": "Submission for today's session reopened for students."
+    }
   },
   "incident": {
     "positivo": "Positive",
@@ -867,5 +877,37 @@
     "exportarPDF": "Save PDF",
     "gardado": "Report saved to {{path}}",
     "erroExportar": "Could not generate the PDF: {{error}}"
+  },
+  "informeEntregas": {
+    "boton": "Submissions",
+    "botonTitulo": "Task submission report for all students, by teaching unit and assessment period",
+    "titulo": "Class submission report",
+    "periodo": "Assessment period",
+    "alumnado": "Students",
+    "grupo": "Group",
+    "global": "Overall",
+    "mediaClase": "Class average",
+    "unidades": "Teaching units",
+    "foraGlobal": "not counted in the overall figure",
+    "notaGlobal": "The overall percentage is computed over the sessions of {{uds}} (submitted sessions out of assessable sessions, so each unit weighs according to its sessions).",
+    "avaliacionN": "Term {{n}}",
+    "cursoCompleto": "Whole school year",
+    "definirAvaliacions": "Define assessment periods",
+    "avaliacionsSuxeridas": "Suggested periods: define and save them for this subject.",
+    "axudaAvaliacions": "Choose the months of each assessment period. The first and last ones are trimmed to the school year's start and end dates.",
+    "nomeAvaliacion": "Name",
+    "desde": "from",
+    "ata": "to",
+    "eliminarAvaliacion": "Remove period",
+    "engadirAvaliacion": "Add period",
+    "gardarAvaliacions": "Save periods",
+    "erroNome": "Each period needs a name.",
+    "erroMeses": "In “{{name}}” the end month is before the start month.",
+    "erroGardarAvaliacions": "Could not save the assessment periods: {{error}}",
+    "udsGlobal": "Teaching units counted in the overall percentage",
+    "senAlumnado": "There are no students enrolled in this subject's groups.",
+    "senSesions": "No sessions have been taught in this period yet.",
+    "mediaGlobal": "Overall class submission",
+    "sesionsAvaliables": "Assessable task sessions"
   }
 }

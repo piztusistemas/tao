@@ -55,6 +55,7 @@ function isEmptyContent(item: Omit<DailyLog, 'date'>): boolean {
     && !item.profesorComment
     && !(item.incidents && item.incidents.length > 0)
     && !item.unlocked
+    && !item.locked
     && !item.equipo;
 }
 

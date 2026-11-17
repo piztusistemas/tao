@@ -17,6 +17,7 @@ export {
     CambioGrupoResult,
     ConexionRexistro,
     EntradaRedaccionMalta,
+    EntregasAlumno,
     EstadoActualizacionTao,
     FBQueueStatus,
     Incident,

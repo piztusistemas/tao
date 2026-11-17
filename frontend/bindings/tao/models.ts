@@ -475,6 +475,66 @@ export class EntradaRedaccionMalta {
 }
 
 /**
+ * EntregasAlumno son as sesións entregadas dun alumno nunha materia.
+ */
+export class EntregasAlumno {
+    "username": string;
+    "name": string;
+    "surname": string;
+    "group": string;
+
+    /**
+     * datas coa práctica escrita no backup
+     */
+    "practicas": string[];
+
+    /**
+     * datas con ficheiros en traballos/<materia>/<data>/
+     */
+    "ficheiros": string[];
+
+    /** Creates a new EntregasAlumno instance. */
+    constructor($$source: Partial<EntregasAlumno> = {}) {
+        if (!("username" in $$source)) {
+            this["username"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("surname" in $$source)) {
+            this["surname"] = "";
+        }
+        if (!("group" in $$source)) {
+            this["group"] = "";
+        }
+        if (!("practicas" in $$source)) {
+            this["practicas"] = [];
+        }
+        if (!("ficheiros" in $$source)) {
+            this["ficheiros"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new EntregasAlumno instance from a string or object.
+     */
+    static createFrom($$source: any = {}): EntregasAlumno {
+        const $$createField4_0 = $$createType0;
+        const $$createField5_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("practicas" in $$parsedSource) {
+            $$parsedSource["practicas"] = $$createField4_0($$parsedSource["practicas"]);
+        }
+        if ("ficheiros" in $$parsedSource) {
+            $$parsedSource["ficheiros"] = $$createField5_0($$parsedSource["ficheiros"]);
+        }
+        return new EntregasAlumno($$parsedSource as Partial<EntregasAlumno>);
+    }
+}
+
+/**
  * EstadoActualizacionTao é o resultado de comprobar unha actualización de
  * Tao — mesma forma ca EstadoActualizacionYang, para que o frontend (React)
  * a consuma igual.

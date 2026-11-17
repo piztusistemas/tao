@@ -35,6 +35,10 @@ export interface DailyLog {
   // distinto ao de hoxe. Decídeo o profesor por sesión (vive no seu log-modelo, m.logs, e
   // superponse sobre o log do alumno igual có estado da sesión).
   unlocked?: boolean;
+  // Entrega bloqueada para o alumnado na sesión de hoxe (que por defecto está aberta).
+  // Decídeo o profesor (vive no seu log-modelo, m.logs, e superponse sobre o log do
+  // alumno); nunca se garda no backup do alumno (ver stripReprogFlags en App.tsx).
+  locked?: boolean;
 }
 
 export interface Unit {

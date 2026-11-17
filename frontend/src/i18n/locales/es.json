@@ -657,7 +657,9 @@
       "incidencias": "Incidencias",
       "eliminarIncidencia": "Eliminar esta incidencia",
       "motivoOpcional": "Motivo (opcional)",
-      "engadir": "Añadir"
+      "engadir": "Añadir",
+      "bloquearEntrega": "Bloquear la entrega de esta sesión",
+      "entregaBloqueada": "El profesorado ha bloqueado la entrega de esta sesión: puedes ver tu respuesta y tus archivos, pero no modificarlos."
     },
     "pechar": "Cerrar",
     "settings": {
@@ -810,7 +812,15 @@
       "ataData": "Hasta el {{data}}"
     },
     "entregaFeita": "Entregada",
-    "entregaPendente": "Sin entregar"
+    "entregaPendente": "Sin entregar",
+    "entregaHoxe": {
+      "aberta": "Entrega de hoy abierta",
+      "bloqueada": "Entrega de hoy bloqueada",
+      "bloquearTitulo": "Bloquear la entrega de tareas en la sesión de hoy",
+      "desbloquearTitulo": "Volver a abrir la entrega de tareas en la sesión de hoy",
+      "bloqueadaMsg": "Entrega de la sesión de hoy bloqueada para el alumnado.",
+      "abertaMsg": "Entrega de la sesión de hoy abierta de nuevo para el alumnado."
+    }
   },
   "incident": {
     "positivo": "Positivo",
@@ -856,5 +866,37 @@
     "exportarPDF": "Guardar PDF",
     "gardado": "Informe guardado en {{path}}",
     "erroExportar": "No se pudo generar el PDF: {{error}}"
+  },
+  "informeEntregas": {
+    "boton": "Entregas",
+    "botonTitulo": "Informe del grado de entrega de tareas de todo el alumnado, por unidad didáctica y evaluación",
+    "titulo": "Informe de entregas de la clase",
+    "periodo": "Evaluación",
+    "alumnado": "Alumnado",
+    "grupo": "Grupo",
+    "global": "Global",
+    "mediaClase": "Media de la clase",
+    "unidades": "Unidades didácticas",
+    "foraGlobal": "no cuenta en el global",
+    "notaGlobal": "El porcentaje global se calcula sobre las sesiones de {{uds}} (sesiones entregadas entre sesiones evaluables, por lo que cada UD pesa según sus sesiones).",
+    "avaliacionN": "{{n}}ª Evaluación",
+    "cursoCompleto": "Curso completo",
+    "definirAvaliacions": "Definir evaluaciones",
+    "avaliacionsSuxeridas": "Evaluaciones sugeridas: defínelas y guárdalas para esta materia.",
+    "axudaAvaliacions": "Elige los meses de cada evaluación. La primera y la última se ajustan a las fechas de inicio y fin del curso.",
+    "nomeAvaliacion": "Nombre",
+    "desde": "de",
+    "ata": "a",
+    "eliminarAvaliacion": "Eliminar evaluación",
+    "engadirAvaliacion": "Añadir evaluación",
+    "gardarAvaliacions": "Guardar evaluaciones",
+    "erroNome": "Cada evaluación necesita un nombre.",
+    "erroMeses": "En «{{name}}» el mes final es anterior al inicial.",
+    "erroGardarAvaliacions": "No se pudieron guardar las evaluaciones: {{error}}",
+    "udsGlobal": "Unidades didácticas que cuentan en el porcentaje global",
+    "senAlumnado": "No hay alumnado matriculado en los grupos de esta materia.",
+    "senSesions": "Todavía no hay sesiones impartidas en este periodo.",
+    "mediaGlobal": "Entrega global de la clase",
+    "sesionsAvaliables": "Sesiones con tarea evaluables"
   }
 }

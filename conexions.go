@@ -8,8 +8,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // Rexistro de conexións do alumnado (informe de seguimento).
@@ -166,26 +164,5 @@ func (a *App) ExportTrackingReportPDF(html, suggestedName string) (string, error
 	if err := a.requireProfessor(); err != nil {
 		return "", err
 	}
-	if strings.TrimSpace(html) == "" {
-		return "", fmt.Errorf("o informe está baleiro")
-	}
-	if suggestedName == "" {
-		suggestedName = "seguimento.pdf"
-	}
-	if !strings.HasSuffix(strings.ToLower(suggestedName), ".pdf") {
-		suggestedName += ".pdf"
-	}
-	pdf, err := renderizarPDF(html)
-	if err != nil {
-		return "", err
-	}
-	dest, err := gardarFicheiro("Gardar o informe de seguimento", suggestedName,
-		application.FileFilter{DisplayName: "PDF (*.pdf)", Pattern: "*.pdf"})
-	if err != nil || dest == "" {
-		return "", err
-	}
-	if err := os.WriteFile(dest, pdf, 0o644); err != nil {
-		return "", fmt.Errorf("non se puido gardar o PDF: %w", err)
-	}
-	return dest, nil
+	return exportarInformePDF(html, suggestedName, "seguimento.pdf", "Gardar o informe de seguimento")
 }
