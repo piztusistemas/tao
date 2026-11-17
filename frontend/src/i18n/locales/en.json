@@ -825,12 +825,11 @@
     "entregaFeita": "Submitted",
     "entregaPendente": "Not submitted",
     "entregaHoxe": {
-      "aberta": "Today's submission open",
-      "bloqueada": "Today's submission locked",
       "bloquearTitulo": "Lock task submission for today's session",
       "desbloquearTitulo": "Reopen task submission for today's session",
       "bloqueadaMsg": "Submission for today's session locked for students.",
-      "abertaMsg": "Submission for today's session reopened for students."
+      "abertaMsg": "Submission for today's session reopened for students.",
+      "boton": "Submission"
     }
   },
   "incident": {

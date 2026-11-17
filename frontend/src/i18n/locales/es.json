@@ -814,12 +814,11 @@
     "entregaFeita": "Entregada",
     "entregaPendente": "Sin entregar",
     "entregaHoxe": {
-      "aberta": "Entrega de hoy abierta",
-      "bloqueada": "Entrega de hoy bloqueada",
       "bloquearTitulo": "Bloquear la entrega de tareas en la sesión de hoy",
       "desbloquearTitulo": "Volver a abrir la entrega de tareas en la sesión de hoy",
       "bloqueadaMsg": "Entrega de la sesión de hoy bloqueada para el alumnado.",
-      "abertaMsg": "Entrega de la sesión de hoy abierta de nuevo para el alumnado."
+      "abertaMsg": "Entrega de la sesión de hoy abierta de nuevo para el alumnado.",
+      "boton": "Entrega"
     }
   },
   "incident": {

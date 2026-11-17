@@ -290,9 +290,10 @@ export default function App() {
   // pasada, punto verde se o alumno entregou (práctica escrita ou ficheiros, o mesmo
   // criterio do informe de seguimento) e punto vermello intermitente se non — só nas
   // sesións nas que ALGÚN compañeiro entregou (classDeliveryDates, marcas anónimas no
-  // compartido); se ninguén entregou, non había tarefa e non se amosa nada. Tamén se ve
-  // en «Acceder como», pero aí só se len as marcas, nunca se escriben.
-  const showDeliveryFeedback = (!isProfessor && !!profile?.connected) || (isProfessor && impersonating);
+  // compartido); se ninguén entregou, non había tarefa e non se amosa nada. Tamén o ve
+  // o profesorado ao seleccionar un alumno (e en «Acceder como»), pero aí só se len as
+  // marcas, nunca se escriben.
+  const showDeliveryFeedback = (!isProfessor && !!profile?.connected) || reviewingStudent;
   const [classDeliveryDates, setClassDeliveryDates] = useState<Set<string>>(new Set());
   const ownDeliveredDates = useMemo(() => {
     const out = new Set<string>(workFileDates);
@@ -1308,8 +1309,8 @@ export default function App() {
                     : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
                 }`}
               >
-                {entregaHoxeBloqueada ? <Ban className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-                {entregaHoxeBloqueada ? t('app.entregaHoxe.bloqueada') : t('app.entregaHoxe.aberta')}
+                {entregaHoxeBloqueada ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                {t('app.entregaHoxe.boton')}
               </button>
             )}
             {isProfessor && !impersonating && (
@@ -1694,6 +1695,11 @@ export default function App() {
                         && log?.status !== 'exame' && day.dateString < todayString
                         && classDeliveryDates.has(day.dateString)
                         ? (ownDelivered ? 'entregada' : 'pendente') : null;
+                      // A cela leva sempre un marco fino da cor da entrega (verde/vermello),
+                      // para facer o seguimento dun vistazo. Ao revisar un alumno, o
+                      // profesorado ve ademais o punto máis grande; en «Acceder como» vese
+                      // coma o alumno.
+                      const deliveryResaltado = !!deliveryDot && reviewingStudent && !impersonating;
                       if (deliveryDot) {
                         title += ` · ${t(deliveryDot === 'entregada' ? 'app.entregaFeita' : 'app.entregaPendente')}`;
                       }
@@ -1702,7 +1708,7 @@ export default function App() {
                       return (
                         <td
                           key={dayNum}
-                          className={`p-0 text-center relative ${borderClass} ${bgColor} ${isDayClickable ? 'cursor-pointer hover:opacity-80' : ''} ${datePicker ? 'ring-1 ring-inset ring-stone-400' : ''}`}
+                          className={`p-0 text-center relative ${borderClass} ${bgColor} ${isDayClickable ? 'cursor-pointer hover:opacity-80' : ''} ${datePicker ? 'ring-1 ring-inset ring-stone-400' : deliveryDot ? `ring-1 ring-inset ${deliveryDot === 'entregada' ? 'ring-emerald-500' : 'ring-rose-600'}` : ''}`}
                           title={datePicker ? t('reportBuilder.pickFromCalendarTitle', { date: title }) : title}
                           onClick={() => {
                             if (datePicker) { datePicker.onPick(day.dateString); setDatePicker(null); return; }
@@ -1716,7 +1722,7 @@ export default function App() {
                           </div>
                           {deliveryDot && (
                             <span aria-hidden="true"
-                              className={`absolute top-1 right-1 w-[3px] h-[3px] rounded-full pointer-events-none ${deliveryDot === 'entregada' ? 'bg-emerald-500' : 'bg-rose-600 punto-intermitente'}`} />
+                              className={`absolute rounded-full pointer-events-none ${deliveryResaltado ? 'top-1 right-1 w-[7px] h-[7px] ring-1 ring-white' : 'top-1 right-1 w-[3px] h-[3px]'} ${deliveryDot === 'entregada' ? 'bg-emerald-500' : 'bg-rose-600 punto-intermitente'}`} />
                           )}
                           {incidentTypes.length > 0 && (
                             <div className="absolute bottom-0.5 left-0 right-0 flex items-center justify-center gap-0.5">
